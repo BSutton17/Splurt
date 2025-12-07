@@ -1,100 +1,45 @@
 import { useEffect, useState } from 'react';
 import './App.css';
 import { io } from 'socket.io-client';
-import { FaPerson, FaPersonDress  } from "react-icons/fa6";
+import rules from './Letter.json';
+import prompts from './Promps.json';
 
-const socket = io("https://surrounded-server-127d32d9b659.herokuapp.com"); 
+const socket = io("http://localhost:3001/"); 
 function App() {
-  const [rule, setRule] = useState("Waiting for host");
+  const [prompt, setPrompt] = useState("Waiting for host");
+  const [rule, setRule] = useState("");
   const [password, setPassword] = useState("");
   const [admin, isAdmin] = useState(false)
   const [availableRules, setAvailableRules] = useState([]);
-
-  const rules = [
-    "Say the perosn in the middles name during your answer",
-    "Say \"tree\" at some point in your answer",
-    "Say a video game during your answer",
-    "name a popular song during your answer",
-    "say something football related in your answer",
-    "Answer as if you are the person to your left",
-    "Answer as if you are the person to your right",
-    "Answer the question how the person asking it would answer",
-    "Give the opposite of your real answer",
-    "Use exactly five words in every answer",
-    "Say 'uhh' or 'umm' before you answer",
-    "Always mention an animal in your response",
-    "Subtly work the word 'school' into your answer",
-    "Your answer must always contain a color",
-    "Repeat part of the question before answering",
-    "Your answer must contain a number, even if it doesn’t make sense",
-    "Always reference something that happened 'yesterday'",
-    "At any point, touch your head/face while you answer",
-    "Use the name of a famous person somewhere in your answer",
-    "Act like you’re unsure of your answer, even if it’s obvious",
-    "Your answer must always contain the word 'technically'",
-    "Include the name of a country in your response",
-    "Your answer must contain the word 'idk'",
-    "Look at the ceiling when answering",
-    "Laugh before or after answering, even if it's not funny",
-    "Your answer must contain a famous movie title",
-    "Your answer must include a type of food",
-    "Your answer must include a reference to the weather",
-    "Don't look at the person while you are answering",
-    "Answer as if you're offended",
-    "Incorporate the phrase \"what do you mean\" into your answer",
-    "Answer in one sentence", 
-    "Mention how \"tall\" or \"short\" something is in your answer ",
-    "Answer as serious as possible (don't smile or laugh)", 
-    "Compliment the person during your answer", 
-    "Mention the name of a fast food restaurant in your answer", 
-    "Mention a city in your answer", 
-    "At any point, point to someone while you answer",
-    "Clap your hands before or after answering",
-    "Use a rhyme in your answer",
-    "Use only single-syllable words in your answer",
-    "Mention a sport in your answer",
-    "Include \"In my opinon...\" somewhere in your answer",
-    "Reference something you are wearing in your asnwer",
-    "Say the name of the person to your right at some point in your answer",
-    "Say the name of the person to your left at some point in your answer",
-    "At some point, stretch while you answer",
-    "Every sentence must start with a word that starts with \"T\"",
-    "Every sentence must start with a word that starts with \"s\"",
-    "Every sentence must start with a word that starts with \"A\"",
-    "At some point, stutter",
-    "Every answer must end with \"You know?\"",
-    "Say the name of a flower in your answer",
-    "Say the name of a pokemon in your answer",
-    "Say \"Chat\" at any point during your answer",
-    "Only speak while tapping your foot",
-    "Nod/shake your head after every sentence",
-    "Squint while answering",
-    "Look at the floor while answering",
-    "Mention something related to gambling in your answer",
-    "Say a type of rock/gem in your answer (Granite, Diamond, Ruby)",
-    "Act like you really don't want to answer before givng your answer",
-    "Mention something space related in your answer",
-    "The person to your left must do the \"layup\" gesture before your answer",
-    "Say \"I'm cooked\" or \"I'm so cooked\" before you answer",
-    "Place something on the floor/table before your answer",
-    "Say your height at some point in your answer",
-    "Answer in the form of a metaphor",
-    "Put your hands in the \"prayer\" positon, while answering",
-    "First person answer normally, everyone else answer the previous persons question"
-  ];
+  const [availablePrompts, setAvailablePrompts] = useState([]);
+  const [playerName, setPlayerName] = useState("");
+  const [players, setPlayers] = useState([]);
+  const [darkMode, setDarkMode] = useState(false);
 
   useEffect(() => {
+    socket.on("updatePrompt", (newPrompt) => {
+      setPrompt(newPrompt);
+      setRule(""); // Clear rule when new prompt arrives
+    });
+
     socket.on("updateRule", (newRule) => {
       setRule(newRule);
     });
 
+    socket.on("updatePlayers", (playersList) => {
+      setPlayers(playersList);
+    });
+
     return () => {
-      socket.off("updateRule"); 
+      socket.off("updatePrompt");
+      socket.off("updateRule");
+      socket.off("updatePlayers");
     };
   }, []);
 
   useEffect(() => {
     setAvailableRules([...rules]);
+    setAvailablePrompts([...prompts]);
   }, []);
 
 
@@ -108,42 +53,60 @@ function App() {
   },[password])
 
   const changeRule = () => {
-    if (availableRules.length === 0) {
-      setAvailableRules([...rules]); 
+    socket.emit("ruleChange", { prompts, rules });
+  };
+
+  const handleNameSubmit = (e) => {
+    if (e.key === 'Enter' && playerName.trim()) {
+      socket.emit("joinGame", playerName.trim());
     }
-    const randomIndex = Math.floor(Math.random() * availableRules.length);
-    const newRule = availableRules[randomIndex];
-    setAvailableRules(availableRules.filter((_, index) => index !== randomIndex));
-    setRule(newRule);
-    socket.emit("ruleChange", newRule);
+  };
+
+  const updateScore = (playerId, delta) => {
+    socket.emit("updateScore", { playerId, delta });
   };
 
   return (
-    <>
-      <div className="title-container">
-        <h1 className="title">Surrounded</h1>
-        <div className="icons">
-          <div className="icon"><FaPerson /></div>
-          <div className="icon"><FaPersonDress /></div>
-          <div className="icon"><FaPerson /></div>
-          <div className="icon"><FaPersonDress /></div>
-          <div className="icon"><FaPerson /></div>
-          <div className="icon"><FaPersonDress /></div>
-          <div className="icon"><FaPerson /></div>
-          <div className="icon"><FaPerson /></div>
-          <div className="icon"><FaPerson /></div>
-          <div className="icon"><FaPersonDress /></div>
-          <div className="icon"><FaPerson /></div>
-          <div className="icon"><FaPersonDress /></div>
+    <div className={darkMode ? 'dark-mode' : ''}>
+      <div className="players-container">
+        {players.map((player) => (
+          <div key={player.id} className="player-card">
+            <span className="player-name">{player.name}</span>
+            <div className="score-container">
+              <span className="player-score">{player.score}</span>
+              {admin && (
+                <div className="score-buttons">
+                  <button onClick={() => updateScore(player.id, 1)}>+</button>
+                  <button onClick={() => updateScore(player.id, -1)}>-</button>
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="top-bar">
+        <div className="title-container">
+          <h1 className="title">SPLURT</h1>
         </div>
+        <input 
+          className="name-input"
+          placeholder="Enter name here" 
+          value={playerName} 
+          onChange={(e) => setPlayerName(e.target.value)}
+          onKeyPress={handleNameSubmit}
+        />
       </div>
   
       <div className="container">
-        <h1 className="rule">{rule}</h1>
+        <h1 className="prompt">{prompt}{!rule && <span>...</span>}</h1>
+        {rule && <h2 className="rule">{rule}</h2>}
         {admin && <button onClick={changeRule}>Change Rule</button>}
       </div>
-      <input value={password} onChange={(e)=>setPassword(e.target.value)}/>
-    </>
+      <input className="admin-password" value={password} onChange={(e)=>setPassword(e.target.value)}/>
+      <button className="dark-mode-toggle" onClick={() => setDarkMode(!darkMode)}>
+        {darkMode ? '☀️' : '🌙'}
+      </button>
+    </div>
   );
   
 }
