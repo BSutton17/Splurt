@@ -4,7 +4,7 @@ import { io } from 'socket.io-client';
 import rules from './Letter.json';
 import prompts from './Promps.json';
 
-const socket = io("http://localhost:3001/"); 
+const socket = io("https://splurt-b6574522f3ab.herokuapp.com/"); 
 function App() {
   const [prompt, setPrompt] = useState("Waiting for host");
   const [rule, setRule] = useState("");
