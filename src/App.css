@@ -449,3 +449,8 @@ body {
     padding: clamp(0.75rem, 2vh, 1.5rem) clamp(0.75rem, 2vw, 1.5rem);
   }
 }
+
+/* A player whose connection dropped - their seat and score are being held. */
+.player-card.offline {
+  opacity: 0.5;
+}
